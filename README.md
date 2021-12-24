@@ -1,2 +1,3 @@
 # Comparative-study-on-different-dimension-reduction-techniques
-An analysis around the problems of various  reduction techniques, accompanied by illustrative implementations.
+My Master's thesis which is about understanding and evaluating different dimensionality reduction techniques and
+analyzing their relationship with the structure of the data. 
