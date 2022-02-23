@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib
 from sklearn.manifold import TSNE
-from Dataset import generations as gen
+from Code.Implementations.DataHandler import generations as gen
 import matplotlib.pyplot as plt
 
 data = gen.genRandomDataUniform(200,15,0,10)
