@@ -5,10 +5,10 @@
   - 25.02.2022: 1: Calcul de la matrice contenant les distributions normalisées q_j|i pour un manifold.    
                 2: Calcul du gradient avec loss KL et mis à jour du manifold.  
                 3: Première implémentation "fonctionnelle" simple de t-sne avec une méthode d'initialisation du manifold et des variances aléatoires.  
-  - 19.03.2022: 1: Transition Pytorch à numpy.
+  - 19.03.2022: 1: Transition Pytorch à numpy.  
                 2: Calcul des sigmas optimaux pour une perplexité donnée. (Selon les données pas toujours possible d'obtenir la perplexité target)   
                 3: Initalisations des Y avec sampling d'une petite distribution gaussienne.  
-                4: Ajout du momentum dans le gradient descent (Optionnel)
+                4: Ajout du momentum dans le gradient descent. (Optionnel)
                 5: Ajout de la conversion de la matrice des probabilités conditionnel à jointe.
     
   
