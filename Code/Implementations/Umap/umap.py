@@ -1,8 +1,8 @@
 from sklearn.metrics.pairwise import euclidean_distances
 import numpy as np
 import scipy.optimize as op
-import matplotlib.pyplot as plt
-import sklearn.manifold
+from sklearn.decomposition import PCA
+from sklearn.manifold import SpectralEmbedding
 
 def computeProbMatrix(sigmas,dist,rhos): #Compute pi|j, sigmas 1d vector containing sgd for each point
     N = len(dist)
@@ -19,7 +19,7 @@ def compute_k(P_row): #return k for a row
     return 2**P_row.sum()
 
 def computeProbEmbedMatrix(Y,a,b):
-    prob_matrix = np.power(1 + a * np.square(euclidean_distances(Y, Y))**(2*b), -1)
+    prob_matrix = np.power(1 + a * np.square(euclidean_distances(Y, Y))**(2*b),-1)
     return prob_matrix
 
 
@@ -28,10 +28,10 @@ def computeGrad(ProbaMatrix,Y,a,b): #Derivative cross entropy
     y_differences = np.expand_dims(Y, 1) - np.expand_dims(Y, 0)
     embedProbMatrix = computeProbEmbedMatrix(Y,a,b)
     Q = np.dot(1 - ProbaMatrix, np.power(0.001 + np.square(euclidean_distances(Y, Y)), -1)) # Q contient
-    np.fill_diagonal(Q, 0)
+    np.fill_diagonal(Q, 1e-6) # not zero to avoid instability when computing cross entropy
     Q = Q / np.sum(Q, axis = 1, keepdims = True) # Normalization pas dans u_map mais peut donner meilleur resultat
     fact = np.expand_dims(a*ProbaMatrix*(1e-8 + np.square(euclidean_distances(Y, Y)))**(b-1) - Q, 2)
-    return 2 * b * np.sum(fact * y_differences * np.expand_dims(embedProbMatrix, 2), axis = 1)
+    return 2 * b * np.sum(fact * y_differences * np.expand_dims(embedProbMatrix, 2), axis = 1),Q
 
 
 def compute_p_row(dist,sigma,rho,normalization):
@@ -80,31 +80,48 @@ def find_best_a_b(min_dist): # On veut trouver a et b utilise dans le calcul de 
     return parameter[0],parameter[1] #a,b
 
 
-def main(data,min_dist,embed_dim,target_k,normalization = False,epochs = 100,learning_rate = 0.01):
+def umap_reduction(data,min_dist,target_dim,target_k,normalization = False,epochs = 200,learning_rate = 0.01,initialization = "random", mu = 0, std = 1,spectal_dim = 2,SGD = False):
+    loss_history = []
     a,b = find_best_a_b(min_dist)
     N = data.shape[0]
     dist = np.square(euclidean_distances(data, data))  # Matrice de distance au carré avec norme 2 -> euclidian
     rhos = [sorted(dist[i])[1] for i in range(N)]  # Distance avec le voisin le plus proche de chaque point p_i
     sigmas = np.asarray([find_optimal_sigma(target_k,rhos[i],dist[i],normalization) for i in range(len(dist))])
-    proba_matrix = p_conditional_to_joint(computeProbMatrix(sigmas,dist,rhos))
-    y = np.random.rand(N,embed_dim)
-    for i in range(epochs): #Not SGD, standard gradient descend
-        y = y - learning_rate*computeGrad(proba_matrix,y,a,b)
-    return y
+    P = p_conditional_to_joint(computeProbMatrix(sigmas,dist,rhos))
+    # P = P / np.sum(P, axis = 1, keepdims = True) # If we want to normalize but not done in umap
 
-N = 10
-M = 15
+    if initialization == "gaussian":
+        Y = np.random.normal(mu, std, size=(data.shape[0], target_dim))
 
-min_dist = 0.0001# Hyperparametre influant sur a et b mais ici initialise à 1 # In practice, UMAP finds a and b from non-linear least-square fitting to the piecewise function with the min_dist hyperparameter:
+    elif initialization == "pca":
+        pca = PCA(n_components=target_dim)
+        Y = pca.fit_transform(data)
 
-embed_dim = 2 #hyperparam
-TARGET_K = 5 # Number of nearest neighboor <=> k = Somme des pij sur une ligne cf p.15 doc officiel => remplace perplexité chez tsne (2^log(n) = n)
-#n_epoch -> hyperparam
-#n -> hyperparam , the number of neighbors to consider when approximating the local metric; utilise dans spectral embedding
+    elif initialization == "laplace":
+        Y = SpectralEmbedding(n_components=spectal_dim)
+        Y = Y.fit_transform(data)
 
-data = np.random.rand(N,M)
+    else:
+        Y = np.random.rand(N, target_dim)
+    if SGD:
+        for i in range(epochs):
+            random_index = np.random.randint(0,len(data))
+            grad,Q = computeGrad(P,Y,a,b)
+            Y[random_index] = Y[random_index] - learning_rate*grad[random_index]
+            loss_history.append(loss(P, Q))
+    else:
+        for i in range(epochs): #Not SGD, standard gradient descend
+            grad,Q = computeGrad(P,Y,a,b)
+            Y = Y - learning_rate*grad
+            loss_history.append(loss(P,Q))
+    return Y,loss_history
 
-## NORMALEMENT Y INITIALISE AVEC SPECTRAL EMBEDING A VOIR PLUS EN DETAIL, pls facon different d'initialiser y TODO
-Y = np.random.rand(N,embed_dim)
+def cross_entropy(y,y_pre):
+  loss=-np.sum(y*np.log(y_pre))
+  return loss/y_pre.shape[0]
 
-print(main(data,min_dist,embed_dim,TARGET_K))
+def loss(P,Q):
+    loss = 0
+    for p,q in zip(P,Q):
+        loss += cross_entropy(p,q)
+    return loss/(P.shape[0])

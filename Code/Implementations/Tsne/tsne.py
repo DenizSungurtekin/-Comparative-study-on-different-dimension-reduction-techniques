@@ -1,5 +1,11 @@
 from sklearn.metrics.pairwise import euclidean_distances
 import numpy as np
+from sklearn.decomposition import PCA
+from sklearn.manifold import SpectralEmbedding
+import warnings
+from scipy.special import rel_entr
+warnings.filterwarnings("ignore")
+
 
 def compute_proba_p_row(distance,sigma,index):
     probas = np.exp(-(distance)/(2*(np.power(sigma,2))))
@@ -46,6 +52,7 @@ def p_conditional_to_joint(P):
 def compute_joint_proba(data, target_perplexity):  # Compute joint probability from data and target perplexity
     N = data.shape[0]
     distances = np.square(euclidean_distances(data,data))
+    print(distances)
     sigmas = np.asarray([find_optimal_sigma(target_perplexity,distances[i],i) for i in range(N)])
     p_conditional = compute_prob_p(distances, sigmas)
     P = p_conditional_to_joint(p_conditional)
@@ -61,19 +68,38 @@ def tsne_grad(P, Q, Y, inv_distances):
     return grad
 
 
-def tsne_reduction(data, target_dim, target_perplexity, iterations = 200, lr=0.01, momentum=False):
-    # There is a lot of different initialisation method: The usual initialization routine for t-SNE is to start from a small random gaussian distribution, TODO
-    # and use “early exaggeration” for the first 100 or so iterations where the input probabilities are multiplied by 4
-    Y = np.random.normal(0, 1, size=(data.shape[0], target_dim)) * 4
+def tsne_reduction(data, target_dim, target_perplexity, epochs = 200, lr=0.001, momentum=False, initialization = "random", mu = 0, std = 1):
+    N = data.shape[0]
+    loss_history = []
+    # There is a lot of different initialisation method: The usual initialization routine for t-SNE is to start from a small random gaussian distribution
+
+    if initialization == "gaussian":
+        Y = np.random.normal(mu, std, size=(N, target_dim))
+
+    elif initialization == "pca":
+        pca = PCA(n_components=target_dim)
+        Y = pca.fit_transform(data)
+
+    elif initialization == "laplace":
+        Y = SpectralEmbedding(n_components=target_dim)
+        Y = Y.fit_transform(data)
+
+    else:
+        Y = np.random.rand(N, target_dim)
+
+
     P = compute_joint_proba(data, target_perplexity)
+    # print(P)
 
     if momentum:
         Y_m2 = Y.copy()
         Y_m1 = Y.copy()
 
-    for i in range(iterations):
+    for i in range(epochs):
 
         Q, inverse_distances = compute_q(Y)
+        loss_history.append(loss_kl(P,Q))
+        # print("Loss :", loss_kl(P, Q)) # If we want to see the current loss
         grads = tsne_grad(P, Q, Y, inverse_distances)
 
         Y = Y - lr * grads
@@ -82,11 +108,17 @@ def tsne_reduction(data, target_dim, target_perplexity, iterations = 200, lr=0.0
             Y_m2 = Y_m1.copy()
             Y_m1 = Y.copy()
 
-    return Y
+    return Y,loss_history
 
-N = 10
-M = 5
-PERPLEXITY = 5
-TARGET_DIMENSION = 2
-data = np.random.normal(0, 1, size=(N, M)) * 4
-print(tsne_reduction(data,TARGET_DIMENSION,PERPLEXITY))
+def loss_kl(matrix_p,matrix_q):
+    loss = 0
+    i = 0
+    for p,q in zip(matrix_p,matrix_q):
+
+        # print(p)
+        res = rel_entr(p,q)
+
+        res[i] = 0 #Case where we have infinity because diag = 0 -> set to 0 to avoid infinity result
+        i += 1
+        loss += res
+    return sum(loss)
