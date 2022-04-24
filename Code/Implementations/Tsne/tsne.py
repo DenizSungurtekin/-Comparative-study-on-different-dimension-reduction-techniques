@@ -47,16 +47,17 @@ def compute_q(Y):
     return q / np.sum(q), q  # normalize in the entire matrix and return also the inverse distance
 
 def p_conditional_to_joint(P):
-    return (P + P.T) / (2. * P.shape[0])
+    return (P + P.T) / (2. * P.shape[0]) # Sum of each row is not one anymore
 
 def compute_joint_proba(data, target_perplexity):  # Compute joint probability from data and target perplexity
     N = data.shape[0]
     distances = np.square(euclidean_distances(data,data))
-    print(distances)
+    # print(distances)
     sigmas = np.asarray([find_optimal_sigma(target_perplexity,distances[i],i) for i in range(N)])
     p_conditional = compute_prob_p(distances, sigmas)
     P = p_conditional_to_joint(p_conditional)
-    return P
+    # print(sum(P[0]))
+    return P,p_conditional
 
 def tsne_grad(P, Q, Y, inv_distances):
     pq_sub_exp = np.expand_dims(P - Q, 2)  # (pij −qij)
@@ -88,7 +89,7 @@ def tsne_reduction(data, target_dim, target_perplexity, epochs = 200, lr=0.001, 
         Y = np.random.rand(N, target_dim)
 
 
-    P = compute_joint_proba(data, target_perplexity)
+    P,p_conditional = compute_joint_proba(data, target_perplexity) # P is the joint probas
     # print(P)
 
     if momentum:
@@ -108,7 +109,7 @@ def tsne_reduction(data, target_dim, target_perplexity, epochs = 200, lr=0.001, 
             Y_m2 = Y_m1.copy()
             Y_m1 = Y.copy()
 
-    return Y,loss_history
+    return Y,loss_history,p_conditional
 
 def loss_kl(matrix_p,matrix_q):
     loss = 0
