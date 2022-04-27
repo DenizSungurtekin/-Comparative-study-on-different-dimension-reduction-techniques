@@ -23,15 +23,14 @@ def computeProbEmbedMatrix(Y,a,b):
     return prob_matrix
 
 
-def computeGrad(ProbaMatrix,Y,a,b): #Derivative cross entropy
-
-    y_differences = np.expand_dims(Y, 1) - np.expand_dims(Y, 0)
-    embedProbMatrix = computeProbEmbedMatrix(Y,a,b)
-    Q = np.dot(1 - ProbaMatrix, np.power(0.001 + np.square(euclidean_distances(Y, Y)), -1)) # Q contient
-    np.fill_diagonal(Q, 1e-6) # not zero to avoid instability when computing cross entropy
-    Q = Q / np.sum(Q, axis = 1, keepdims = True) # Normalization pas dans u_map mais peut donner meilleur resultat
-    fact = np.expand_dims(a*ProbaMatrix*(1e-8 + np.square(euclidean_distances(Y, Y)))**(b-1) - Q, 2)
-    return 2 * b * np.sum(fact * y_differences * np.expand_dims(embedProbMatrix, 2), axis = 1),Q
+def computeGrad(P, Y,a,b):
+    y_diff = np.expand_dims(Y, 1) - np.expand_dims(Y, 0)
+    inv_dist = np.power(1 + a * np.square(euclidean_distances(Y, Y))**b, -1)
+    Q = np.dot(1 - P, np.power(0.001 + np.square(euclidean_distances(Y, Y)), -1))
+    np.fill_diagonal(Q, 0)
+    Q = Q / np.sum(Q, axis = 1, keepdims = True)
+    fact=np.expand_dims(a*P*(1e-8 + np.square(euclidean_distances(Y, Y)))**(b-1) - Q, 2)
+    return 2 * b * np.sum(fact * y_diff * np.expand_dims(inv_dist, 2), axis = 1),Q
 
 
 def compute_p_row(dist,sigma,rho,normalization):
@@ -80,14 +79,15 @@ def find_best_a_b(min_dist): # On veut trouver a et b utilise dans le calcul de 
     return parameter[0],parameter[1] #a,b
 
 
-def umap_reduction(data,min_dist,target_dim,target_k,normalization = False,epochs = 200,learning_rate = 0.01,initialization = "random", mu = 0, std = 1,spectal_dim = 2,SGD = False):
+def umap_reduction(data,min_dist,target_dim,target_k,normalization = False,epochs = 200,lr = 0.01,initialization = "random", mu = 0, std = 1,SGD = False):
     loss_history = []
     a,b = find_best_a_b(min_dist)
     N = data.shape[0]
     dist = np.square(euclidean_distances(data, data))  # Matrice de distance au carré avec norme 2 -> euclidian
     rhos = [sorted(dist[i])[1] for i in range(N)]  # Distance avec le voisin le plus proche de chaque point p_i
     sigmas = np.asarray([find_optimal_sigma(target_k,rhos[i],dist[i],normalization) for i in range(len(dist))])
-    P = p_conditional_to_joint(computeProbMatrix(sigmas,dist,rhos))
+    P_cond = computeProbMatrix(sigmas,dist,rhos)
+    P = p_conditional_to_joint(P_cond)
     # P = P / np.sum(P, axis = 1, keepdims = True) # If we want to normalize but not done in umap
 
     if initialization == "gaussian":
@@ -98,30 +98,27 @@ def umap_reduction(data,min_dist,target_dim,target_k,normalization = False,epoch
         Y = pca.fit_transform(data)
 
     elif initialization == "laplace":
-        Y = SpectralEmbedding(n_components=spectal_dim)
+        Y = SpectralEmbedding(n_components=target_dim)
         Y = Y.fit_transform(data)
 
     else:
         Y = np.random.rand(N, target_dim)
+
     if SGD:
         for i in range(epochs):
             random_index = np.random.randint(0,len(data))
             grad,Q = computeGrad(P,Y,a,b)
-            Y[random_index] = Y[random_index] - learning_rate*grad[random_index]
-            loss_history.append(loss(P, Q))
+            Y[random_index] = Y[random_index] - lr*grad[random_index]
+            loss_history.append(cross_entropy(P,Y,a,b))
     else:
         for i in range(epochs): #Not SGD, standard gradient descend
             grad,Q = computeGrad(P,Y,a,b)
-            Y = Y - learning_rate*grad
-            loss_history.append(loss(P,Q))
-    return Y,loss_history
+            Y = Y - lr*grad
+            loss_history.append(cross_entropy(P,Y,a,b))
+    return Y,loss_history,P_cond
 
-def cross_entropy(y,y_pre):
-  loss=-np.sum(y*np.log(y_pre))
-  return loss/y_pre.shape[0]
 
-def loss(P,Q):
-    loss = 0
-    for p,q in zip(P,Q):
-        loss += cross_entropy(p,q)
-    return loss/(P.shape[0])
+def cross_entropy(P,Y,a,b):
+    Q = np.power(1 + a * np.square(euclidean_distances(Y, Y))**b, -1)
+    cross = - P * np.log(Q + 0.01) - (1 - P) * np.log(1 - Q + 0.01)
+    return np.sum(cross) / (P.shape[0]*P.shape[1])

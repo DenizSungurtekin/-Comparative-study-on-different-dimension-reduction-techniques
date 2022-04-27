@@ -33,6 +33,9 @@ def all_plots(data,target_dim,lr,epochs,save = True,show = True): # If saves we 
                     Y, loss, conditional_probas = tsne.tsne_reduction(data2, target_dim, perplexity, epochs=epochs, initialization=mode, lr=lr)
                     string = mode+"std"+str(std)+"perplex"+str(perplexity)
 
+                    #Plot example of one row distribution
+                    func_tools.draw_dist_neighboorhood(conditional_probas,0)
+
                     # Plot loss
                     plt.plot(loss)
                     plt.xlabel("Iterations")
@@ -83,15 +86,15 @@ def all_plots(data,target_dim,lr,epochs,save = True,show = True): # If saves we 
 
 #-------4D To 3d---------
 ## TSNE: some parameters to fix before plots
-# epochs = 1000
-# lr = 100
-# target_dim = 3
+epochs = 1000
+lr = 100
+target_dim = 3
 
 
 # Different call of the plot function
 # all_plots(data,target_dim,lr,epochs) #To show and save
 # all_plots(data,target_dim,lr,epochs,show = False) # Only save
-# all_plots(data,target_dim,lr,epochs,save = False) # Only show
+all_plots(data,target_dim,lr,epochs,save = False) # Only show
 
 
 #-------4D To 2d---------

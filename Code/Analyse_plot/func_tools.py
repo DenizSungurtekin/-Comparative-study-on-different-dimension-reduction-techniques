@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 def scatter2d(Y,title = "No title",color = ["blue"],label = "No label",plot = True): # data is a 2d matrix
     x = Y[0:, 0]
@@ -34,11 +35,15 @@ def compute_peak(p_conditional,threshold):
             if p_conditional[i][j]>=threshold:
                 count_neigh += 1
         counts.append(count_neigh)
-    return counts
+    return np.asarray(counts)
 
-def plot_conditional_density(p_conditional,threshold,plot = True):
+def plot_conditional_density(p_conditional,threshold,plot = True,umap = False):
     x = [i for i in range(len(p_conditional))]
     counts = compute_peak(p_conditional,threshold)
+
+    if umap:
+        counts -= 2 # Because in umap pi|j =  pj|j = 1 if i = j
+
     plt.bar(x,counts)
     plt.xlabel("x")
     plt.ylabel("Number of significant neighboors with pi|j >"+str(threshold))
