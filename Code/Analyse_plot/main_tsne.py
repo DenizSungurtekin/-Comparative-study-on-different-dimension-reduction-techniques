@@ -86,15 +86,15 @@ def all_plots(data,target_dim,lr,epochs,save = True,show = True): # If saves we 
 
 #-------4D To 3d---------
 ## TSNE: some parameters to fix before plots
-epochs = 1000
-lr = 100
-target_dim = 3
+# epochs = 1000
+# lr = 100
+# target_dim = 3
 
 
 # Different call of the plot function
 # all_plots(data,target_dim,lr,epochs) #To show and save
 # all_plots(data,target_dim,lr,epochs,show = False) # Only save
-all_plots(data,target_dim,lr,epochs,save = False) # Only show
+# all_plots(data,target_dim,lr,epochs,save = False) # Only show
 
 
 #-------4D To 2d---------
@@ -108,3 +108,85 @@ all_plots(data,target_dim,lr,epochs,save = False) # Only show
 # all_plots(data,target_dim,lr,epochs) #To show and save
 # all_plots(data,target_dim,lr,epochs,show=False) # Only save
 # all_plots(data,target_dim,lr,epochs,save = False) # Only show
+
+# ---------------------------
+
+## --- Stability analyse ----
+
+def checkList(l1,l2): # Check if element of l1 are not in L2
+    for el in l1:
+        if el in l2:
+            return True
+    return False
+
+## Stability matrix dist and mean by row
+def compute_stability_matrix(s1,s2,data):
+    # s1,s2 the number of pivot points
+
+    N,M = data.shape
+    i = 0
+    message = True
+
+    indexs1 = [np.random.randint(0,N) for i in range(s1)]
+    indexs2 = [np.random.randint(0,N) for i in range(s2)]
+
+    while checkList(indexs1,indexs2): # Be sure that indexes are different
+        if i > 100 and message == True:
+            print("Warning maybe in an infinite loop")
+            message = False
+
+        indexs1 = [np.random.randint(0, N) for i in range(s1)]
+        indexs2 = [np.random.randint(0, N) for i in range(s2)]
+        i += 1
+
+    # print(i)
+    data1 = data[indexs1]
+    data2 = data[indexs2]
+
+    dist = np.square(euclidean_distances(data1, data2))
+    meanRow = [np.mean(dist[i]) for i in range(s1)]
+
+    return meanRow,dist
+
+
+# Check general stability of different initialization method/Noise intensity/No noise/k_values
+def checkStability(savename,data=data,s1=5,s2=200,target_dim=2,perplexities=[2,15],epochs=500,modes=["random","gaussian","laplace","pca"],lr=100,stds=[1,5]):
+    i = 0
+    tot_dist = np.zeros((s1,s2))
+
+    for mode in modes:
+        for perplexity,std in zip(perplexities,stds):
+            Y,_,_ = tsne.tsne_reduction(data, target_dim, perplexity, epochs=epochs, initialization=mode, lr=lr)
+            _,dist = compute_stability_matrix(s1,s2,Y)
+            i += 1
+            # print(i)  #To check state on execution time
+            tot_dist += dist
+
+    tot_dist /= i
+    meanRow = [np.mean(tot_dist[i]) for i in range(s1)]
+
+    # Save data
+    name1 = savename+"DistMatrix.txt"
+    name2 = savename + "MeanRow.txt"
+
+    name3 = savename + "DistMatrix.npy"
+    name4 = savename + "MeanRow.npy"
+
+    np.savetxt(name1, tot_dist, fmt="%s")
+    np.savetxt(name2, meanRow, fmt="%s")
+
+    with open(name3,"wb") as f:
+        np.save(f,tot_dist)
+
+    with open(name4,"wb") as f:
+        np.save(f,meanRow)
+
+    return tot_dist,meanRow
+
+
+# # Run test first over all modes then mode by mode to see the stability
+# checkStability("generalTest")
+# checkStability("random",modes=["random"])
+# checkStability("gaussian",modes=["gaussian"])
+# checkStability("laplace",modes=["laplace"])
+# checkStability("pca",modes=["pca"])
