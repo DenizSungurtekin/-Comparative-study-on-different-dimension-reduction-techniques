@@ -120,73 +120,96 @@ def checkList(l1,l2): # Check if element of l1 are not in L2
     return False
 
 ## Stability matrix dist and mean by row
-def compute_stability_matrix(s1,s2,data):
+indexs= False
+def compute_stability_matrix(s1,s2,data_original,data,indexs):
     # s1,s2 the number of pivot points
 
-    N,M = data.shape
+    N,_ = data.shape
     i = 0
     message = True
 
-    indexs1 = [np.random.randint(0,N) for i in range(s1)]
-    indexs2 = [np.random.randint(0,N) for i in range(s2)]
+    if not indexs:
+        indexs1 = [np.random.randint(0,N) for i in range(s1)]
+        indexs2 = [np.random.randint(0,N) for i in range(s2)]
 
-    while checkList(indexs1,indexs2): # Be sure that indexes are different
-        if i > 100 and message == True:
-            print("Warning maybe in an infinite loop")
-            message = False
+        while checkList(indexs1,indexs2): # Be sure that indexes are different
+            if i > 1000 and message == True:
+                print("Warning maybe in an infinite loop")
+                message = False
 
-        indexs1 = [np.random.randint(0, N) for i in range(s1)]
-        indexs2 = [np.random.randint(0, N) for i in range(s2)]
-        i += 1
+            indexs1 = [np.random.randint(0, N) for i in range(s1)]
+            indexs2 = [np.random.randint(0, N) for i in range(s2)]
+            i += 1
+    else:
+        indexs1 = indexs[0]
+        indexs2 = indexs[1]
 
     # print(i)
+    data1_original = data_original[indexs1]
+    data2_original = data_original[indexs2]
+    dist_original = np.square(euclidean_distances(data1_original, data2_original))
+
+    meanRow_original = np.asarray([np.mean(dist_original[i]) for i in range(s1)])
+
     data1 = data[indexs1]
     data2 = data[indexs2]
 
     dist = np.square(euclidean_distances(data1, data2))
-    meanRow = [np.mean(dist[i]) for i in range(s1)]
+    meanRow = np.asarray([np.mean(dist[i]) for i in range(s1)])
 
-    return meanRow,dist
+    stability_score = np.mean(np.abs(meanRow_original - meanRow))
+    return stability_score,[indexs1,indexs2]
 
+def map(vector):
+
+    res = []
+    min = np.min(vector)
+    max = np.max(vector)
+
+    for el in vector:
+        res.append(1 - (el-min)/(max-min))
+
+    return np.asarray(res)
 
 # Check general stability of different initialization method/Noise intensity/No noise/k_values
-def checkStability(savename,data=data,s1=5,s2=200,target_dim=2,perplexities=[2,15],epochs=500,modes=["random","gaussian","laplace","pca"],lr=100,stds=[1,5]):
-    i = 0
-    tot_dist = np.zeros((s1,s2))
+def checkStability(name,data=data,s1=5,s2=200,target_dim=2,perplexities=[2,15],epochs=500,modes=["random","gaussian","laplace","pca"],lr=100,stds=[1,5]):
+    global indexs
+    scores = []
+    size = (data.shape[0], 1)
 
     for mode in modes:
-        for perplexity,std in zip(perplexities,stds):
-            Y,_,_ = tsne.tsne_reduction(data, target_dim, perplexity, epochs=epochs, initialization=mode, lr=lr)
-            _,dist = compute_stability_matrix(s1,s2,Y)
-            i += 1
-            # print(i)  #To check state on execution time
-            tot_dist += dist
+        for perplexity in perplexities:
+            for std in stds:
 
-    tot_dist /= i
-    meanRow = [np.mean(tot_dist[i]) for i in range(s1)]
+                noise = np.random.normal(0, std, size=size)
+                data2 = np.append(data, noise, axis=1)  # add noise t
 
-    # Save data
-    name1 = savename+"DistMatrix.txt"
-    name2 = savename + "MeanRow.txt"
+                Y,_,_ = tsne.tsne_reduction(data2, target_dim, perplexity, epochs=epochs, initialization=mode, lr=lr)
+                score,indexs = compute_stability_matrix(s1,s2,data,Y,indexs)
+                scores.append(score)
 
-    name3 = savename + "DistMatrix.npy"
-    name4 = savename + "MeanRow.npy"
 
-    np.savetxt(name1, tot_dist, fmt="%s")
-    np.savetxt(name2, meanRow, fmt="%s")
+    # # Save data
+    # name1 = savename + "DistMatrix.txt"
+    # name2 = savename + "MeanRow.txt"
+    #
+    # name3 = savename + "DistMatrix.npy"
+    # name4 = savename + "MeanRow.npy"
+    #
+    # np.savetxt(name1, tot_dist, fmt="%s")
+    # np.savetxt(name2, meanRow, fmt="%s")
+    #
+    # with open(name3,"wb") as f:
+    #     np.save(f,tot_dist)
+    #
+    # with open(name4,"wb") as f:
+    #     np.save(f,meanRow)
 
-    with open(name3,"wb") as f:
-        np.save(f,tot_dist)
-
-    with open(name4,"wb") as f:
-        np.save(f,meanRow)
-
-    return tot_dist,meanRow
-
+    return map(scores) # Si score -> 1 alors bonne stabilité car petite mean distance sinon 0
 
 # # Run test first over all modes then mode by mode to see the stability
-# checkStability("generalTest")
-# checkStability("random",modes=["random"])
+#print(checkStability("generalTest"))
+# print(checkStability("random",modes=["random"]))
 # checkStability("gaussian",modes=["gaussian"])
 # checkStability("laplace",modes=["laplace"])
 # checkStability("pca",modes=["pca"])
