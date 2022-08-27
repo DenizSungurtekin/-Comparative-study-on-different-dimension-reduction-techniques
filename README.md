@@ -15,7 +15,7 @@
   - 21.04.2022: Implémentation de la génération de dataset swissroll et l'automatisation des plots selons l'epochs, learning_rate, ecart type du bruit ajouté comme 4ème dimension au dataset, perplexité, threshold permettant de définir la proba minimal pour considérer un point comme étant un voisin (Estimation de la densité), + plot diagram de shepard + plot loss + sauvegarde des plots.
   - 23.04.2022: Ajout des 256 images pour run de 4D à 3D + Ajout des 256 images pour run de 4D à 2D. Avec comme parametres: epochs = 1000, lr = 100, perplexité = [5,15,25,50], stds = [1,5,10,20], threshold = 0.05. 
   - 28.06.2022: Ajout de l'analyse de la stability utilisant des points pivots et ajout des données dans le fichier "analyse_plot". 
-  
+  - 27.08.2022: Ajout des methodes d'evaluations des datasets et plot des multiples configurations.
   
    
                
@@ -35,6 +35,7 @@
   - 21.04.2022: Implémentation de la génération de dataset swissroll et l'automatisation des plots selons l'epochs, learning_rate, ecart type du bruit ajouté comme 4ème dimension au dataset, k, threshold permettant de définir la proba minimal pour considérer un point comme étant un voisin (Estimation de la densité), + plot diagram de shepard + plot loss + sauvegarde des plots.
   - 27.04.2022: Ajout des 256 images pour run de 4D à 3D + Ajout des 256 images pour run de 4D à 2D. Avec comme parametres: epochs = 1000, lrs = [0.02,0.02,0.02,0.002], k_values = [2,15,25,50], stds = [1,5,10,20], threshold = 0.1, min_dist = 0.1. 
   - 28.06.2022: Ajout de l'analyse de la stability utilisant des points pivots et ajout des données dans le fichier "analyse_plot". 
+  - 27.08.2022: Ajout des methodes d'evaluations des datasets et plot des multiples configurations.
   
                
     
