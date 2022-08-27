@@ -172,52 +172,41 @@ def map(vector):
     res = []
     min = np.min(vector)
     max = np.max(vector)
+    # print(max)
+    # print(min)
 
     for el in vector:
+        # print(1 - (el - min) / (max - min))
         res.append(1 - (el-min)/(max-min))
 
+    # print(np.max(res))
+    # print(np.min(res))
+    # print(len(res))
     return np.asarray(res)
 
 # Check general stability of different initialization method/Noise intensity/No noise/k_values
-def checkStability(name,data=data,s1=5,s2=200,target_dim=2,ks=[2,15],epochs=500,modes=["random","gaussian","laplace","pca"],lr=0.02,stds=[1,5]):
+def checkStability_umap(name="Default",data=data,s1=10,s2=100,target_dim=2,ks=[2,15,35,50],epochs=500,modes=["random","gaussian","laplace","pca"],lr=0.02):
     global indexs
     scores = []
-    size = (data.shape[0], 1)
     min_dist = 0.1
-
+    infos = [] # Contain parameters value
     for mode in modes:
+        if mode == "pca":
+            lr = 0.002
         for k in ks:
-            for std in stds:
-
-                noise = np.random.normal(0, std, size=size)
-                data2 = np.append(data, noise, axis=1)  # add noise t
-
-                Y,_,_ = umap.umap_reduction(data2,min_dist, target_dim, k, epochs=epochs, initialization=mode, lr=lr,SGD=False)
-                score,indexs = compute_stability_matrix(s1,s2,data,Y,indexs)
-                scores.append(score)
+            Y,_,_ = umap.umap_reduction(data,min_dist, target_dim, k, epochs=epochs, initialization=mode, lr=lr,SGD=False)
+            score,indexs = compute_stability_matrix(s1,s2,data,Y,indexs)
+            info = "k = ",k, "mode = ",mode
+            scores.append(score)
+            infos.append(info)
 
 
-    # # Save data
-    # name1 = savename + "DistMatrix.txt"
-    # name2 = savename + "MeanRow.txt"
-    #
-    # name3 = savename + "DistMatrix.npy"
-    # name4 = savename + "MeanRow.npy"
-    #
-    # np.savetxt(name1, tot_dist, fmt="%s")
-    # np.savetxt(name2, meanRow, fmt="%s")
-    #
-    # with open(name3,"wb") as f:
-    #     np.save(f,tot_dist)
-    #
-    # with open(name4,"wb") as f:
-    #     np.save(f,meanRow)
-
-    return map(scores) # Si score -> 1 alors bonne stabilité car petite mean distance sinon 0
+    scores = map(scores) # Si score -> 1 alors bonne stabilité car petite mean distance sinon 0
+    return np.asarray(list(zip(scores,infos)))
 
 # # Run test first over all modes then mode by mode to see the stability
 # print(checkStability("generalTest"))
 # print(checkStability("random",modes=["random"]))
-# checkStability("gaussian",modes=["gaussian"])
-# checkStability("laplace",modes=["laplace"])
-# checkStability("pca",modes=["pca"])
+# print(checkStability("gaussian",modes=["gaussian"]))
+# print(checkStability("laplace",modes=["laplace"]))
+# print(checkStability("pca",modes=["pca"]))

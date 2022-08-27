@@ -82,6 +82,7 @@ def konig(data1,data_red,k1,k2):
                 continue
             start = j-k2
             if rank1[i][j] in rank2[i][start:j + k2 + 1]:
+                # print("yo")
                 km.append(1)
                 continue
             else:
@@ -90,6 +91,7 @@ def konig(data1,data_red,k1,k2):
         kms.append(km)
 
     kms = np.asarray(kms)
+    # print(kms)
     # print(kms[0,:]) To display result for a row
     # print(rank1[0,:])
     # print(rank2[0, :])
@@ -98,6 +100,7 @@ def konig(data1,data_red,k1,k2):
 
     num = np.sum(kms[:,0:k1])
     score = num/(3*k1*n)
+
     return score
 
 

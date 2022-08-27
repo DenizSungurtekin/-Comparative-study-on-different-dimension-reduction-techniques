@@ -4,6 +4,7 @@ from Code.Implementations.DataHandler import generations
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import euclidean_distances
+from Code.Implementations.DataHandler import evaluations
 
 # Generate Data, plot and save original data
 size = 200
@@ -168,25 +169,22 @@ def map(vector):
 
     for el in vector:
         res.append(1 - (el-min)/(max-min))
-
+    # print(len(res))
     return np.asarray(res)
 
 # Check general stability of different initialization method/Noise intensity/No noise/k_values
-def checkStability(name,data=data,s1=5,s2=200,target_dim=2,perplexities=[2,15],epochs=500,modes=["random","gaussian","laplace","pca"],lr=100,stds=[1,5]):
+def checkStability_tsne(name="Default",data=data,s1=10,s2=100,target_dim=2,perplexities=[2,15,35,50],epochs=500,modes=["random","gaussian","laplace","pca"],lr=100):
     global indexs
     scores = []
-    size = (data.shape[0], 1)
-
+    infos = [] # Contain parameters value
     for mode in modes:
         for perplexity in perplexities:
-            for std in stds:
 
-                noise = np.random.normal(0, std, size=size)
-                data2 = np.append(data, noise, axis=1)  # add noise t
-
-                Y,_,_ = tsne.tsne_reduction(data2, target_dim, perplexity, epochs=epochs, initialization=mode, lr=lr)
-                score,indexs = compute_stability_matrix(s1,s2,data,Y,indexs)
-                scores.append(score)
+            Y,_,_ = tsne.tsne_reduction(data, target_dim, perplexity, epochs=epochs, initialization=mode, lr=lr)
+            score,indexs = compute_stability_matrix(s1,s2,data,Y,indexs)
+            info = "p= ",perplexity, "mode = ",mode
+            scores.append(score)
+            infos.append(info)
 
 
     # # Save data
@@ -205,11 +203,19 @@ def checkStability(name,data=data,s1=5,s2=200,target_dim=2,perplexities=[2,15],e
     # with open(name4,"wb") as f:
     #     np.save(f,meanRow)
 
-    return map(scores) # Si score -> 1 alors bonne stabilité car petite mean distance sinon 0
+    scores = map(scores) # Si score -> 1 alors bonne stabilité car petite mean distance sinon 0
+    # infos = np.asarray(infos)
+    return np.asarray(list(zip(scores,infos)))
 
 # # Run test first over all modes then mode by mode to see the stability
-#print(checkStability("generalTest"))
+# print(checkStability("generalTest"))
 # print(checkStability("random",modes=["random"]))
-# checkStability("gaussian",modes=["gaussian"])
-# checkStability("laplace",modes=["laplace"])
-# checkStability("pca",modes=["pca"])
+# print(checkStability("gaussian",modes=["gaussian"]))
+# print(checkStability("laplace",modes=["laplace"]))
+# print(checkStability("pca",modes=["pca"]))
+
+
+
+
+
+

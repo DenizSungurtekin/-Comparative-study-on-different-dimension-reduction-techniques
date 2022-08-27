@@ -20,8 +20,8 @@ mode = "laplace"
 lr = 0.02
 min_dist = 0.1
 k = 5
-Y, loss, conditional_probas = umap.umap_reduction(data2,min_dist, 2, k, epochs=epochs, initialization=mode, lr=lr,SGD=False)
 
+Y, loss, conditional_probas = umap.umap_reduction(data2,min_dist, 2, k, epochs=epochs, initialization=mode, lr=lr,SGD=False)
 
 print("Stress value: ",evaluations.stress(data,Y)) # 0 to 1 -> 0 = perfect
 print("Spearman rho value: ",evaluations.spearman(data,Y)) # -1 to 1, 1 = perfect

@@ -79,7 +79,8 @@ def find_best_a_b(min_dist): # On veut trouver a et b utilise dans le calcul de 
     return parameter[0],parameter[1] #a,b
 
 
-def umap_reduction(data,min_dist,target_dim,target_k,normalization = False,epochs = 200,lr = 0.01,initialization = "random", mu = 0, std = 1,SGD = False):
+def umap_reduction(data,min_dist,target_dim,target_k,normalization = False,epochs = 200,lr = 0.02,initialization = "random", mu = 0, std = 1,SGD = False):
+
     loss_history = []
     a,b = find_best_a_b(min_dist)
     N = data.shape[0]
