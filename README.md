@@ -1,6 +1,9 @@
 ## Comparative study on UMAP and t-SNE
 
+![unige_csd](https://user-images.githubusercontent.com/43375040/190927447-6ee858d9-0233-4241-8ba3-a1e851ceecf4.png) 
+
 Here you can find my computer science master project, a comparative study between UMAP and t-SNE accompanied by a personal and simplified implementation of these techniques.
+
 You can find the following elements:
   - Code: Contain the entire code behind the project. The architecture is described just below.
   - Oral Presentation.pdf/ppt: The slides used during the oral examination.
