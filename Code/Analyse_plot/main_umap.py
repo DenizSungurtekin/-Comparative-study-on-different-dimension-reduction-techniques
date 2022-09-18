@@ -1,18 +1,18 @@
-from Code.Implementations.Umap import umap
+from Code.Implementations import umap
 from Code.Analyse_plot import func_tools
-from Code.Implementations.DataHandler import generations
+from Code.DataHandler import dataset_generations
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import euclidean_distances
 
 # Generate Data, plot and save original data
 size = 200
-data,color_swiss = generations.make_swiss_roll(size)
+data,color_swiss = dataset_generations.make_swiss_roll(size)
 
-#Save and plot
-# func_tools.scatter3d(data, color=color_swiss,plot=False,title="Original Data")
-# # func_tools.save_plot_umap("Original")
-# plt.show()
+## Save and plot original data
+func_tools.scatter3d(data, color=color_swiss,plot=False,title="Original Data")
+func_tools.save_plot_umap("Original")
+plt.show()
 
 def all_plots(data,target_dim,epochs,save = True,show = True): # If saves we save plots in plot/tsne, if show we shows the plots one by one
     modes = ["random","gaussian","laplace","pca"]
@@ -33,10 +33,10 @@ def all_plots(data,target_dim,epochs,save = True,show = True): # If saves we sav
                     data2 = np.append(data, noise, axis=1)  # add noise to swiss roll
 
                     distances = np.square(euclidean_distances(data2,data2))
-                    Y, loss, conditional_probas = umap.umap_reduction(data2,min_dist, target_dim, k, epochs=epochs, initialization=mode, lr=lr,SGD=False)
+                    Y, loss, conditional_probas = umap.umap_reduction(data2, min_dist, target_dim, k, epochs=epochs, initialization=mode, lr=lr, SGD=False)
                     string = mode+"std"+str(std)+"K"+str(k)
 
-                    # #Plot example of row distribution
+                    ## Plot example of row distribution # Not used in experiment
                     # for i in range(10):
                     #     func_tools.draw_dist_neighboorhood(conditional_probas,i)
 
@@ -89,36 +89,30 @@ def all_plots(data,target_dim,epochs,save = True,show = True): # If saves we sav
         print("Error target dimension need to be 2D or 3D...")
 
 
-
-
-# Main: Run different configs and plot results
+# Main: Run different configs and plot results EXPERIMENT 1
 
 #-------4D To 3d plot---------
-# TSNE: some parameters to fix before plots
-# epochs = 1000
-# target_dim = 3
-#
-#
-# # Different call of the plot function
-# # all_plots(data,target_dim,epochs) #To show and save
-# all_plots(data,target_dim,epochs,show = False) # Only save
-# # all_plots(data,target_dim,epochs,save = False) # Only show
+epochs = 1000
+target_dim = 3
+
+
+all_plots(data,target_dim,epochs) #To show and save
+## all_plots(data,target_dim,epochs,show = False) # Only save
+## all_plots(data,target_dim,epochs,save = False) # Only show
 
 
 #-------4D To 2d---------
-## TSNE: some parameters to fix before plots
-# epochs = 1000
-# target_dim = 2
+epochs = 1000
+target_dim = 2
 
 
-# Different call of the plot function
-# all_plots(data,target_dim,epochs) #To show and save
+all_plots(data,target_dim,epochs) #To show and save
 # all_plots(data,target_dim,epochs,show=False) # Only save
 # all_plots(data,target_dim,epochs,save = False) # Only show
 
 # ---------------------------
 
-## --- Stability analyse ----
+## --- Stability analyse Experiment 2----
 
 def checkList(l1,l2): # Check if element of l1 are not in L2
     for el in l1:
@@ -128,7 +122,7 @@ def checkList(l1,l2): # Check if element of l1 are not in L2
 
 ## Stability matrix dist and mean by row
 indexs= False
-def compute_stability_matrix(s1,s2,data_original,data,indexs):
+def compute_stability_matrix(s1,s2,data_original,data,indexs): # Compute configuration score
     # s1,s2 the number of pivot points
 
     N,_ = data.shape
@@ -151,7 +145,6 @@ def compute_stability_matrix(s1,s2,data_original,data,indexs):
         indexs1 = indexs[0]
         indexs2 = indexs[1]
 
-    # print(i)
     data1_original = data_original[indexs1]
     data2_original = data_original[indexs2]
     dist_original = np.square(euclidean_distances(data1_original, data2_original))
@@ -168,23 +161,16 @@ def compute_stability_matrix(s1,s2,data_original,data,indexs):
     return stability_score,[indexs1,indexs2]
 
 def map(vector):
-
     res = []
     min = np.min(vector)
     max = np.max(vector)
-    # print(max)
-    # print(min)
 
     for el in vector:
-        # print(1 - (el - min) / (max - min))
         res.append(1 - (el-min)/(max-min))
 
-    # print(np.max(res))
-    # print(np.min(res))
-    # print(len(res))
     return np.asarray(res)
 
-# Check general stability of different initialization method/Noise intensity/No noise/k_values
+# EXPERIMENT 2
 def checkStability_umap(name="Default",data=data,s1=10,s2=100,target_dim=2,ks=[2,15,35,50],epochs=500,modes=["random","gaussian","laplace","pca"],lr=0.02):
     global indexs
     scores = []
@@ -194,7 +180,7 @@ def checkStability_umap(name="Default",data=data,s1=10,s2=100,target_dim=2,ks=[2
         if mode == "pca":
             lr = 0.002
         for k in ks:
-            Y,_,_ = umap.umap_reduction(data,min_dist, target_dim, k, epochs=epochs, initialization=mode, lr=lr,SGD=False)
+            Y,_,_ = umap.umap_reduction(data, min_dist, target_dim, k, epochs=epochs, initialization=mode, lr=lr, SGD=False)
             score,indexs = compute_stability_matrix(s1,s2,data,Y,indexs)
             info = "k = ",k, "mode = ",mode
             scores.append(score)
@@ -203,10 +189,3 @@ def checkStability_umap(name="Default",data=data,s1=10,s2=100,target_dim=2,ks=[2
 
     scores = map(scores) # Si score -> 1 alors bonne stabilité car petite mean distance sinon 0
     return np.asarray(list(zip(scores,infos)))
-
-# # Run test first over all modes then mode by mode to see the stability
-# print(checkStability("generalTest"))
-# print(checkStability("random",modes=["random"]))
-# print(checkStability("gaussian",modes=["gaussian"]))
-# print(checkStability("laplace",modes=["laplace"]))
-# print(checkStability("pca",modes=["pca"]))

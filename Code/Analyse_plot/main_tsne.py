@@ -1,20 +1,22 @@
-from Code.Implementations.Tsne import tsne
+from Code.Implementations import tsne
 from Code.Analyse_plot import func_tools
-from Code.Implementations.DataHandler import generations
+from Code.DataHandler import dataset_generations
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import euclidean_distances
-from Code.Implementations.DataHandler import evaluations
 
-# Generate Data, plot and save original data
+# Generate Data
 size = 200
-data,color_swiss = generations.make_swiss_roll(size)
+data,color_swiss = dataset_generations.make_swiss_roll(size)
 
-#Save and plot
-# func_tools.scatter3d(data, color=color_swiss,plot=False,title="Original Data")
-# # func_tools.save_plot_tsne("Original")
-# plt.show()
+# Save and plot Original data
+func_tools.scatter3d(data, color=color_swiss,plot=False,title="Original Data")
+func_tools.save_plot_tsne("Original")
+plt.show()
 
+
+
+# Function used to do the EXPERIMENT 1 under t-sne. The plots are showed and saved if desired
 def all_plots(data,target_dim,lr,epochs,save = True,show = True): # If saves we save plots in plot/tsne, if show we shows the plots one by one
     modes = ["random","gaussian","pca","laplace"]
     colors = ["blue","red","orange","black"]
@@ -85,34 +87,35 @@ def all_plots(data,target_dim,lr,epochs,save = True,show = True): # If saves we 
     else:
         print("Error target dimension need to be 2D or 3D...")
 
-#-------4D To 3d---------
-## TSNE: some parameters to fix before plots
-# epochs = 1000
-# lr = 100
-# target_dim = 3
 
 
-# Different call of the plot function
-# all_plots(data,target_dim,lr,epochs) #To show and save
+# Call plots functions with desired hyper parameters
+#-------4D To 3d Reduction---------
+
+epochs = 1000
+lr = 100
+target_dim = 3
+
+
+## Different call of the plot function: CHOOSE ONE
+
+all_plots(data,target_dim,lr,epochs) #To show and save
 # all_plots(data,target_dim,lr,epochs,show = False) # Only save
 # all_plots(data,target_dim,lr,epochs,save = False) # Only show
 
 
-#-------4D To 2d---------
-## TSNE: some parameters to fix before plots
-# epochs = 1000
-# lr = 100
-# target_dim = 2
+#-------4D To 2d reduction---------
+epochs = 1000
+lr = 100
+target_dim = 2
 
-
-# Different call of the plot function
-# all_plots(data,target_dim,lr,epochs) #To show and save
+all_plots(data,target_dim,lr,epochs) #To show and save
 # all_plots(data,target_dim,lr,epochs,show=False) # Only save
 # all_plots(data,target_dim,lr,epochs,save = False) # Only show
 
 # ---------------------------
 
-## --- Stability analyse ----
+## --- Stability analyse EXPERIMENT 2 ----
 
 def checkList(l1,l2): # Check if element of l1 are not in L2
     for el in l1:
@@ -120,9 +123,8 @@ def checkList(l1,l2): # Check if element of l1 are not in L2
             return True
     return False
 
-## Stability matrix dist and mean by row
-indexs= False
-def compute_stability_matrix(s1,s2,data_original,data,indexs):
+indexs= False # Used to have the same random indexes with diferent dataset and methods
+def compute_stability_matrix(s1,s2,data_original,data,indexs): # Compute configuration score defined in experiment 2
     # s1,s2 the number of pivot points
 
     N,_ = data.shape
@@ -145,7 +147,6 @@ def compute_stability_matrix(s1,s2,data_original,data,indexs):
         indexs1 = indexs[0]
         indexs2 = indexs[1]
 
-    # print(i)
     data1_original = data_original[indexs1]
     data2_original = data_original[indexs2]
     dist_original = np.square(euclidean_distances(data1_original, data2_original))
@@ -161,7 +162,7 @@ def compute_stability_matrix(s1,s2,data_original,data,indexs):
     stability_score = np.mean(np.abs(meanRow_original - meanRow))
     return stability_score,[indexs1,indexs2]
 
-def map(vector):
+def map(vector): # Mapping to [0.1]
 
     res = []
     min = np.min(vector)
@@ -169,10 +170,10 @@ def map(vector):
 
     for el in vector:
         res.append(1 - (el-min)/(max-min))
-    # print(len(res))
+
     return np.asarray(res)
 
-# Check general stability of different initialization method/Noise intensity/No noise/k_values
+# Implementation of Experiment 2
 def checkStability_tsne(name="Default",data=data,s1=10,s2=100,target_dim=2,perplexities=[2,15,35,50],epochs=500,modes=["random","gaussian","laplace","pca"],lr=100):
     global indexs
     scores = []
@@ -187,35 +188,5 @@ def checkStability_tsne(name="Default",data=data,s1=10,s2=100,target_dim=2,perpl
             infos.append(info)
 
 
-    # # Save data
-    # name1 = savename + "DistMatrix.txt"
-    # name2 = savename + "MeanRow.txt"
-    #
-    # name3 = savename + "DistMatrix.npy"
-    # name4 = savename + "MeanRow.npy"
-    #
-    # np.savetxt(name1, tot_dist, fmt="%s")
-    # np.savetxt(name2, meanRow, fmt="%s")
-    #
-    # with open(name3,"wb") as f:
-    #     np.save(f,tot_dist)
-    #
-    # with open(name4,"wb") as f:
-    #     np.save(f,meanRow)
-
     scores = map(scores) # Si score -> 1 alors bonne stabilité car petite mean distance sinon 0
-    # infos = np.asarray(infos)
     return np.asarray(list(zip(scores,infos)))
-
-# # Run test first over all modes then mode by mode to see the stability
-# print(checkStability("generalTest"))
-# print(checkStability("random",modes=["random"]))
-# print(checkStability("gaussian",modes=["gaussian"]))
-# print(checkStability("laplace",modes=["laplace"]))
-# print(checkStability("pca",modes=["pca"]))
-
-
-
-
-
-

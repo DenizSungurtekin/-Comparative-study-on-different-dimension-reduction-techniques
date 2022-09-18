@@ -1,6 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+
+## File that contain useful function to make plots
+
+
 def scatter2d(Y,title = "No title",color = ["blue"],label = "No label",plot = True): # data is a 2d matrix
     x = Y[0:, 0]
     y = Y[0:, 1]
@@ -27,7 +31,7 @@ def scatter3d(Y,title = "No title",color = ["blue"],label = "No label",plot = Tr
     if plot:
         plt.show()
 
-def compute_peak(p_conditional,threshold):
+def compute_peak(p_conditional,threshold): # Used to visualize density of data
     counts = []
     for i in range(len(p_conditional)):
         count_neigh = 0
@@ -61,7 +65,7 @@ def shepard_diag(dist,dist_embeed,plot = True):
     if plot:
         plt.show()
 
-def draw_dist_neighboorhood(p_conditional,index):
+def draw_dist_neighboorhood(p_conditional,index): #Plot number of neighbors from a point that have pij bigger than p_conditional
     x = [i for i in range(p_conditional.shape[1])]
     plt.plot(x, p_conditional[index])
     plt.title("Distribution of pi|j for i = "+str(index))
@@ -69,10 +73,10 @@ def draw_dist_neighboorhood(p_conditional,index):
     plt.ylabel("pi|j")
     plt.show()
 
-def save_plot_tsne(name):
+def save_plot_tsne(name): # Save a plot in the right folder
     str = 'plots/tsne/' + name+ ".png"
     plt.savefig(str)
 
-def save_plot_umap(name):
+def save_plot_umap(name): # Save a plot in the right folder
     str = 'plots/umap/' + name + ".png"
     plt.savefig(str)
